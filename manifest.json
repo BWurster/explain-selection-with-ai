@@ -1,0 +1,11 @@
+{
+	"id": "expand-with-ai",
+	"name": "Expand with AI",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "This plugin allows you to define an LLM endpoint and use it to provide further context to selected text when you right click on it.",
+	"author": "Ben Wurster",
+	"authorUrl": "https://obsidian.md",
+	"fundingUrl": "https://obsidian.md/pricing",
+	"isDesktopOnly": false
+}
