@@ -26,13 +26,17 @@ export default class AiElaboratePlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		const openai = new OpenAI({ apiKey: this.settings.apiKey, dangerouslyAllowBrowser: true });
+		const openai = new OpenAI({
+			apiKey: this.settings.apiKey,
+			dangerouslyAllowBrowser: true,
+		});
 
 		this.registerEvent(
 			this.app.workspace.on("editor-menu", (menu, editor, view) => {
 				menu.addItem((item) => {
 					const selection = editor.getSelection();
-					const label = selection.length > 24
+					const label =
+						selection.length > 24
 							? selection.substring(0, 24) + "..."
 							: selection;
 					item.setTitle(`Expand on "${label}" in context with AI`)
@@ -41,11 +45,15 @@ export default class AiElaboratePlugin extends Plugin {
 							view.file && new Notice(view.file.path);
 							const selection = editor.getSelection();
 
-							const cursor = editor.getCursor()
-							const lineText = editor.getLine(cursor.line)
+							const cursor = editor.getCursor();
+							const lineText = editor
+								.getLine(cursor.line)
 								.substring(
 									cursor.ch - 500 > 0 ? cursor.ch - 500 : 0,
-									cursor.ch + 500 < editor.getLine(cursor.line).length ? cursor.ch + 500 : editor.getLine(cursor.line).length
+									cursor.ch + 500 <
+										editor.getLine(cursor.line).length
+										? cursor.ch + 500
+										: editor.getLine(cursor.line).length
 								);
 
 							const endpoint = this.settings.endpoint;
@@ -107,30 +115,39 @@ export class AiExpandModal extends Modal {
 
 	async onOpen() {
 		let { contentEl } = this;
-		
-		const completion = await this.openai.chat.completions.create({
-			model: this.endpoint,
-			messages: [
-				{ role: "system", content: "You are a helpful assistant." },
-				{
-					role: "user",
-					content:
-						`Elaborate on "${this.userSelection}" in the context of "${this.selectionContext}"`,
-				},
-			],
-			stream: true,
-		});
 
 		let rollingText = "";
 		const content = contentEl.createEl("p", { text: rollingText });
 
-		for await (const chunk of completion) {
-			if (chunk.choices[0].delta.content) {
-				rollingText += chunk.choices[0].delta.content;
-				content.innerHTML = rollingText;
-			}
-		}
+		try {
+			const completion = await this.openai.chat.completions.create({
+				model: this.endpoint,
+				messages: [
+					{ role: "system", content: "You are a helpful assistant." },
+					{
+						role: "user",
+						content: `Elaborate on "${this.userSelection}" in the context of "${this.selectionContext}"`,
+					},
+				],
+				stream: true,
+			});
 
+			content.style.userSelect = "text";
+
+			for await (const chunk of completion) {
+				if (chunk.choices[0].delta.content) {
+					rollingText += chunk.choices[0].delta.content;
+					content.innerHTML = rollingText;
+				}
+			}
+		} catch (err) {
+			content.innerHTML = "There was an issue with the request. Please ensure plugin configuration settings are correct and try again.";
+			content.style.color = "white";
+			content.style.fontStyle = "italic";
+			content.style.backgroundColor = "red";
+			content.style.borderRadius = "10px";
+			content.style.padding = "10px";
+		}
 	}
 
 	onClose() {
