@@ -6,4 +6,4 @@ This plugin provides an additional element to the editor context menu that will 
 
 In order to set up the plugin for use, all you need is the API-endpoint URL and an API key. Fill out these fields in settings to begin making requests.
 
-Note: if you are using an OpenAI endpoint, using the enpoint name such as `gpt-3.5-turbo` or `gpt-4o` is sufficient instead of using the full URL.
+Note: if you are using an OpenAI endpoint, using the endpoint name such as `gpt-3.5-turbo` or `gpt-4o` is sufficient instead of using the full URL.
