@@ -3,9 +3,8 @@
 	"name": "Expand with AI",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "This plugin allows you to define an LLM endpoint and use it to provide further context to selected text when you right click on it.",
+	"description": "Use an OpenAI Chat Completion API-compatible LLM endpoint to expand on selected text in the context of your notes.",
 	"author": "Ben Wurster",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"authorUrl": "https://benwurster.com",
 	"isDesktopOnly": false
 }

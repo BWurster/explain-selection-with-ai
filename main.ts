@@ -72,7 +72,7 @@ export default class AiElaboratePlugin extends Plugin {
 		);
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new AIElaborateSettingTab(this.app, this));
 	}
 
 	onunload() {}
@@ -137,16 +137,12 @@ export class AiExpandModal extends Modal {
 			for await (const chunk of completion) {
 				if (chunk.choices[0].delta.content) {
 					rollingText += chunk.choices[0].delta.content;
-					content.innerHTML = rollingText;
+					content.setText(rollingText);
 				}
 			}
 		} catch (err) {
-			content.innerHTML = "There was an issue with the request. Please ensure plugin configuration settings are correct and try again.";
-			content.style.color = "white";
-			content.style.fontStyle = "italic";
-			content.style.backgroundColor = "red";
-			content.style.borderRadius = "10px";
-			content.style.padding = "10px";
+			content.setText("There was an issue with the request. Please ensure plugin configuration settings are correct and try again.");
+			content.toggleClass("error_text", true);
 		}
 	}
 
@@ -156,7 +152,7 @@ export class AiExpandModal extends Modal {
 	}
 }
 
-class SampleSettingTab extends PluginSettingTab {
+class AIElaborateSettingTab extends PluginSettingTab {
 	plugin: AiElaboratePlugin;
 
 	constructor(app: App, plugin: AiElaboratePlugin) {
@@ -170,7 +166,7 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName("AI Endpoint")
+			.setName("AI endpoint")
 			.setDesc(
 				"Enter the endpoint you would like to be used for expanding on selected items."
 			)
@@ -185,7 +181,7 @@ class SampleSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Endpoint API Key")
+			.setName("Endpoint API key")
 			.setDesc(
 				"(Optional) Enter your secret API key for the endpoint above."
 			)
