@@ -117,7 +117,7 @@ export class AiExpandModal extends Modal {
 		let { contentEl } = this;
 
 		let rollingText = "";
-		const content = contentEl.createEl("p", { text: rollingText });
+		const content = contentEl.createEl("p", { text: rollingText, cls: "selectable_text" });
 
 		try {
 			const completion = await this.openai.chat.completions.create({
@@ -132,8 +132,6 @@ export class AiExpandModal extends Modal {
 				stream: true,
 			});
 
-			content.style.userSelect = "text";
-
 			for await (const chunk of completion) {
 				if (chunk.choices[0].delta.content) {
 					rollingText += chunk.choices[0].delta.content;
@@ -142,6 +140,7 @@ export class AiExpandModal extends Modal {
 			}
 		} catch (err) {
 			content.setText("There was an issue with the request. Please ensure plugin configuration settings are correct and try again.");
+			content.toggleClass("selectable_text", false);
 			content.toggleClass("error_text", true);
 		}
 	}

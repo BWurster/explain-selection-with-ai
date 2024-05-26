@@ -7,6 +7,10 @@ If your plugin does not need CSS, delete this file.
 
 */
 
+.selectable_text {
+	user-select: text;
+}
+
 .error_text {
 	color: white;
 	font-style: italic;
