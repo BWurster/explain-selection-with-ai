@@ -1,9 +1,9 @@
 {
-	"id": "expand-with-ai",
-	"name": "Expand with AI",
+	"id": "explain-selection-with-ai",
+	"name": "Explain Selection With AI",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Use an OpenAI Chat Completion API-compatible LLM endpoint to expand on selected text in the context of your notes.",
+	"description": "Use an OpenAI Chat Completion API-compatible LLM endpoint to explain the selected text in greater detail.",
 	"author": "Ben Wurster",
 	"authorUrl": "https://benwurster.com",
 	"isDesktopOnly": false

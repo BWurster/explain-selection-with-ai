@@ -4,32 +4,30 @@ import {
 	Plugin,
 	PluginSettingTab,
 	Setting,
-	Notice,
 } from "obsidian";
 import OpenAI from "openai";
 
 // Remember to rename these classes and interfaces!
 
-interface AiElaboratePluginSettings {
+interface ExplainSelectionWithAiPluginSettings {
+	dropdownValue: string;
+	baseURL: string;
 	endpoint: string;
 	apiKey: string;
 }
 
-const DEFAULT_SETTINGS: AiElaboratePluginSettings = {
-	endpoint: "",
+const DEFAULT_SETTINGS: ExplainSelectionWithAiPluginSettings = {
+	dropdownValue: "openai",
+	baseURL: "https://api.openai.com/v1/",
+	endpoint: "gpt-3.5-turbo",
 	apiKey: "",
 };
 
-export default class AiElaboratePlugin extends Plugin {
-	settings: AiElaboratePluginSettings;
+export default class ExplainSelectionWithAiPlugin extends Plugin {
+	settings: ExplainSelectionWithAiPluginSettings;
 
 	async onload() {
 		await this.loadSettings();
-
-		const openai = new OpenAI({
-			apiKey: this.settings.apiKey,
-			dangerouslyAllowBrowser: true,
-		});
 
 		this.registerEvent(
 			this.app.workspace.on("editor-menu", (menu, editor, view) => {
@@ -42,7 +40,6 @@ export default class AiElaboratePlugin extends Plugin {
 					item.setTitle(`Expand on "${label}" in context with AI`)
 						.setIcon("document")
 						.onClick(async () => {
-							view.file && new Notice(view.file.path);
 							const selection = editor.getSelection();
 
 							const cursor = editor.getCursor();
@@ -58,7 +55,13 @@ export default class AiElaboratePlugin extends Plugin {
 
 							const endpoint = this.settings.endpoint;
 
-							const modal = new AiExpandModal(
+							const openai = new OpenAI({
+								baseURL: this.settings.baseURL,
+								apiKey: this.settings.apiKey === "" ? "-" : this.settings.apiKey,
+								dangerouslyAllowBrowser: true,
+							});
+
+							const modal = new ExplainSelectionWithAiModal(
 								this.app,
 								openai,
 								endpoint,
@@ -72,7 +75,7 @@ export default class AiElaboratePlugin extends Plugin {
 		);
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new AIElaborateSettingTab(this.app, this));
+		this.addSettingTab(new ExplainSelectionWithAiSettingTab(this.app, this));
 	}
 
 	onunload() {}
@@ -90,7 +93,7 @@ export default class AiElaboratePlugin extends Plugin {
 	}
 }
 
-export class AiExpandModal extends Modal {
+export class ExplainSelectionWithAiModal extends Modal {
 	userSelection: string;
 	selectionContext: string;
 	openai: OpenAI;
@@ -114,7 +117,7 @@ export class AiExpandModal extends Modal {
 	}
 
 	async onOpen() {
-		let { contentEl } = this;
+		const { contentEl } = this;
 
 		let rollingText = "";
 		const content = contentEl.createEl("p", { text: rollingText, cls: "selectable_text" });
@@ -146,52 +149,146 @@ export class AiExpandModal extends Modal {
 	}
 
 	onClose() {
-		let { contentEl } = this;
+		const { contentEl } = this;
 		contentEl.empty();
 	}
 }
 
-class AIElaborateSettingTab extends PluginSettingTab {
-	plugin: AiElaboratePlugin;
+class ExplainSelectionWithAiSettingTab extends PluginSettingTab {
+	plugin: ExplainSelectionWithAiPlugin;
 
-	constructor(app: App, plugin: AiElaboratePlugin) {
+	constructor(app: App, plugin: ExplainSelectionWithAiPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
 	display(): void {
 		const { containerEl } = this;
-
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName("AI endpoint")
+			.setName("LLM provider")
 			.setDesc(
-				"Enter the endpoint you would like to be used for expanding on selected items."
+				"Select the LLM provider you want to use. Currently remote OpenAI, local Ollama, and custom endpoint configurations are supported."
 			)
-			.addText((text) =>
-				text
-					.setPlaceholder("https://example.com/chat")
-					.setValue(this.plugin.settings.endpoint)
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOption("openai", "OpenAI (remote)")
+					.addOption("ollama", "Ollama (local)")
+					.addOption("custom", "Custom")
+					.setValue(this.plugin.settings.dropdownValue)
 					.onChange(async (value) => {
-						this.plugin.settings.endpoint = value;
+						this.plugin.settings.dropdownValue = value;
+						if (value === "custom") {
+							this.plugin.settings.baseURL = "";
+							this.plugin.settings.endpoint = "";
+							this.plugin.settings.apiKey = "";
+						} else if (value === "openai") {
+							this.plugin.settings.baseURL = "https://api.openai.com/v1/";
+							this.plugin.settings.endpoint = "gpt-3.5-turbo";
+							this.plugin.settings.apiKey = "";
+						} else if (value === "ollama") {
+							this.plugin.settings.baseURL = "http://localhost:11434/v1/";
+							this.plugin.settings.endpoint = "llama3";
+							this.plugin.settings.apiKey = "";
+						}
 						await this.plugin.saveSettings();
-					})
+						this.displayConditionalSettings(containerEl);
+					})}
 			);
+		this.displayConditionalSettings(containerEl);
+	}
 
-		new Setting(containerEl)
-			.setName("Endpoint API key")
-			.setDesc(
-				"(Optional) Enter your secret API key for the endpoint above."
-			)
-			.addText((text) =>
-				text
-					.setPlaceholder("Secret key")
-					.setValue(this.plugin.settings.apiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.apiKey = value;
-						await this.plugin.saveSettings();
-					})
-			);
+	displayConditionalSettings(containerEl: HTMLElement) {
+		// Clear any existing conditional settings
+        const existingConditionalSettings = containerEl.querySelectorAll('.conditional-setting');
+        existingConditionalSettings.forEach(setting => setting.remove());
+
+		// Display conditional settings based on the dropdown value
+        if (this.plugin.settings.dropdownValue === 'openai') {
+            new Setting(containerEl)
+                .setName('OpenAI model')
+                .setDesc('Select the OpenAI model you want to use.')
+				.addDropdown((dropdown) => {
+					dropdown
+						.addOption("gpt-3.5-turbo", "gpt-3.5-turbo")
+						.addOption("gpt-4o", "gpt-4o")
+						.addOption("gpt-4-turbo", "gpt-4-turbo")
+						.setValue(this.plugin.settings.endpoint)
+						.onChange(async (value) => {
+							this.plugin.settings.endpoint = value;
+							await this.plugin.saveSettings();
+						});
+                })
+                .setClass('conditional-setting');
+			new Setting(containerEl)
+				.setName('API Key')
+				.setDesc('Enter your OpenAI API key. (required)')
+				.addText(text => {
+					text
+						.setValue(this.plugin.settings.apiKey)
+						.onChange(async (value) => {
+							this.plugin.settings.apiKey = value;
+							await this.plugin.saveSettings();
+						});
+				})
+				.setClass('conditional-setting');
+
+        } else if (this.plugin.settings.dropdownValue === 'ollama') {
+            new Setting(containerEl)
+				.setName('Selected Ollama model')
+				.setDesc('Choose the Ollama model you want to use. Make sure you have Ollama installed and running with the selected model pulled.')
+				.addDropdown((dropdown) => {
+					dropdown
+						.addOption("llama3", "llama3")
+						.addOption("mistral", "mistral")
+						.setValue(this.plugin.settings.endpoint)
+						.onChange(async (value) => {
+							this.plugin.settings.endpoint = value;
+							await this.plugin.saveSettings();
+						})
+				})
+				.setClass('conditional-setting');
+
+        } else if (this.plugin.settings.dropdownValue === 'custom') {
+			new Setting(containerEl)
+				.setName('Base URL')
+				.setDesc('Enter your custom base URL.')
+				.addText(text => {
+					text
+						.setValue(this.plugin.settings.baseURL)
+						.onChange(async (value) => {
+							this.plugin.settings.baseURL = value;
+							await this.plugin.saveSettings();
+						});
+				})
+				.setClass('conditional-setting');
+
+			new Setting(containerEl)
+				.setName('Endpoint')
+				.setDesc('Enter your custom endpoint.')
+				.addText(text => {
+					text
+						.setValue(this.plugin.settings.endpoint)
+						.onChange(async (value) => {
+							this.plugin.settings.endpoint = value;
+							await this.plugin.saveSettings();
+						});
+				})
+				.setClass('conditional-setting');
+
+			new Setting(containerEl)
+				.setName('API Key')
+				.setDesc('Enter your custom API key. (Optional)')
+				.addText(text => {
+					text
+						.setValue(this.plugin.settings.apiKey)
+						.onChange(async (value) => {
+							this.plugin.settings.apiKey = value;
+							await this.plugin.saveSettings();
+						});
+				})
+				.setClass('conditional-setting');
+		}
 	}
 }
