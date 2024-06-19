@@ -1,4 +1,4 @@
-# Obsidian AI Expander Plugin
+# Obsidian Explain Selection with AI Plugin
 
 This is a plugin for Obsidian (https://obsidian.md).
 
@@ -29,8 +29,8 @@ If you wish to use other models at this time, see the next section on configurin
 
 ## Using alternative local or remote model (advanced)
 
-If you are not familiar with the [Hugging Face Text Generation Interface (TGI)](https://huggingface.co/docs/text-generation-inference/en/index), it is not recommended to go this route. Having access to models spun up locally or remotely is a prerequisite for successfully going this route.
+If you are not familiar with the [Hugging Face Text Generation Interface (TGI)](https://huggingface.co/docs/text-generation-inference/en/index), it is not recommended to go this route. Having access to models spun up locally or remotely is a prerequisite for successfully using this interface and is beyond the scope of this documentation.
 
 With this in mind, provide the `Base URL` and `Endpoint` settings as well as an optional `API Key` should your setup necessitate that to interface with your local or remote model.
 
-This is ultimately an "under-the-hood" access to the Chat API to be an option for more advanced users.
+This is ultimately an "under-the-hood" access to the Chat API to be an option for more advanced users or restricted endpoints.
