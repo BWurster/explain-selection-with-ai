@@ -4,6 +4,7 @@ import {
 	Plugin,
 	PluginSettingTab,
 	Setting,
+	MarkdownRenderer,
 } from "obsidian";
 import OpenAI from "openai";
 
@@ -66,7 +67,8 @@ export default class ExplainSelectionWithAiPlugin extends Plugin {
 								openai,
 								endpoint,
 								selection,
-								lineText
+								lineText,
+								this
 							);
 							modal.open();
 						});
@@ -98,16 +100,21 @@ export class ExplainSelectionWithAiModal extends Modal {
 	selectionContext: string;
 	openai: OpenAI;
 	endpoint: string;
+	app: App;
+	plugin: Plugin;
 
 	constructor(
 		app: App,
 		openai: OpenAI,
 		endpoint: string,
 		userSelection: string,
-		selectionContext: string
+		selectionContext: string,
+		plugin: Plugin
 	) {
 		super(app);
 
+		this.app = app;
+		this.plugin = plugin;
 		this.userSelection = userSelection;
 		this.selectionContext = selectionContext;
 		this.openai = openai;
@@ -120,9 +127,10 @@ export class ExplainSelectionWithAiModal extends Modal {
 		const { contentEl } = this;
 
 		let rollingText = "";
-		const content = contentEl.createEl("p", { text: rollingText, cls: "selectable_text" });
+		const contentBox = contentEl.createEl("div", { cls: "selectable_text" });
 
 		try {
+			// call the completion endpoint with the query context
 			const completion = await this.openai.chat.completions.create({
 				model: this.endpoint,
 				messages: [
@@ -135,15 +143,21 @@ export class ExplainSelectionWithAiModal extends Modal {
 				stream: true,
 			});
 
+			// render new chunks as they come in
 			for await (const chunk of completion) {
 				if (chunk.choices[0].delta.content) {
 					rollingText += chunk.choices[0].delta.content;
-					content.setText(rollingText);
+					contentBox.empty();
+					MarkdownRenderer.render(this.app, rollingText, contentBox, "/", this.plugin);
 				}
 			}
 		} catch (err) {
+			// set error message to be not selectable
+			contentBox.toggleClass("selectable_text", false);
+
+			// display error message for user
+			const content = contentBox.createEl("p");
 			content.setText("There was an issue with the request. Please ensure plugin configuration settings are correct and try again.");
-			content.toggleClass("selectable_text", false);
 			content.toggleClass("error_text", true);
 		}
 	}
